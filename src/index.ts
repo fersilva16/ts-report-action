@@ -2,7 +2,7 @@ import { error, getInput, setFailed } from '@actions/core';
 import ts from 'typescript';
 import path from 'path';
 
-const check = async (projectPath: string, files: string[]) => {
+const check = async (projectPath: string, files?: string[]) => {
   const json = ts.readConfigFile(projectPath, ts.sys.readFile);
 
   if (json.error) {
@@ -11,15 +11,28 @@ const check = async (projectPath: string, files: string[]) => {
     return;
   }
 
-  const config = ts.parseJsonConfigFileContent(
-    {
-      ...json.config,
+  const getFilesOptions = () => {
+    if (!files) return {};
+
+    return {
       compilerOptions: {
-        ...json.config.compilerOptions,
         skipLibCheck: true,
       },
       files,
       include: [],
+    };
+  };
+
+  const filesOptions = getFilesOptions();
+
+  const config = ts.parseJsonConfigFileContent(
+    {
+      ...json.config,
+      ...filesOptions,
+      compilerOptions: {
+        ...json.config.compilerOptions,
+        ...filesOptions.compilerOptions,
+      },
     },
     ts.sys,
     path.dirname(projectPath),

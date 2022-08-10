@@ -10,5 +10,7 @@ branding:
 inputs:
   project:
     description: 'TypeScript project file'
+    required: false
   files:
     description: 'Files to check'
+    required: false
