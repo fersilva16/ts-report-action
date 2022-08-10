@@ -1,10 +1,10 @@
 import { getInput, debug, setFailed } from '@actions/core';
 import { context, getOctokit } from '@actions/github';
 import { spawnSync } from 'child_process';
-import util from 'util';
+import { inspect } from 'util';
 
 const debugConsole = (obj: unknown) => {
-  return debug(util.inspect(obj, true, null, true));
+  return debug(inspect(obj, true, null, true));
 };
 
 const check = async (ghToken: string, files: string[]) => {
@@ -44,7 +44,7 @@ const check = async (ghToken: string, files: string[]) => {
 
   if (result.status !== 2) {
     setFailed(
-      util.inspect(
+      inspect(
         {
           result,
           output: result.output.map((output) => output?.toString()).join('\n'),
