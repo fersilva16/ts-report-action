@@ -8,9 +8,7 @@ branding:
   icon: check-square
   color: blue
 inputs:
-  project:
-    description: 'Project path'
-    required: false
+  githubToken:
+    description: 'GitHub token'
   files:
     description: 'Files to check'
-    required:
