@@ -1,137 +1,90 @@
-import { getInput, debug, setFailed } from '@actions/core';
-import { context, getOctokit } from '@actions/github';
-import { spawnSync } from 'child_process';
-import { inspect } from 'util';
+import { error, getInput, setFailed } from '@actions/core';
+import ts from 'typescript';
+import path from 'path';
 
-const debugConsole = (obj: unknown) => {
-  return debug(inspect(obj, true, null, true));
-};
+const check = async (projectPath: string, files: string[]) => {
+  const json = ts.readConfigFile(projectPath, ts.sys.readFile);
 
-const check = async (ghToken: string, files: string[]) => {
-  debugConsole({
-    ghToken,
-    files,
+  if (json.error) {
+    setFailed(ts.flattenDiagnosticMessageText(json.error.messageText, '\n'));
+
+    return;
+  }
+
+  const config = ts.parseJsonConfigFileContent(
+    {
+      ...json.config,
+      compilerOptions: {
+        ...json.config.compilerOptions,
+        skipLibCheck: true,
+      },
+      files,
+      include: [],
+    },
+    ts.sys,
+    path.dirname(projectPath),
+    undefined,
+    path.basename(projectPath)
+  );
+
+  const program = ts.createProgram({
+    rootNames: config.fileNames,
+    options: config.options,
+    projectReferences: config.projectReferences,
+    configFileParsingDiagnostics: ts.getConfigFileParsingDiagnostics(config),
   });
 
-  const { owner, repo } = context.repo;
-  const prNumber = context.payload.pull_request?.number;
-  const baseUrl = `https://github.com/${owner}/${repo}`;
+  const diagnostics = program.getSemanticDiagnostics();
 
-  if (!prNumber) {
-    // eslint-disable-next-line i18n-text/no-en
-    setFailed('Not in PR');
+  const sortedDiagnostics = ts.sortAndDeduplicateDiagnostics(diagnostics);
 
-    return;
-  }
+  for (const diagnostic of sortedDiagnostics) {
+    const getDiagnosticPosition = () => {
+      if (!diagnostic.file || !diagnostic.start) {
+        return {
+          startLine: undefined,
+          startColumn: undefined,
+        };
+      }
 
-  const result = spawnSync('yarn', [
-    '--silent',
-    'tsc-files',
-    '--noEmit',
-    ...files,
-  ]);
+      const { line, character } = ts.getLineAndCharacterOfPosition(
+        diagnostic.file,
+        diagnostic.start
+      );
 
-  if (result.error) {
-    setFailed(result.error);
+      return {
+        startLine: line + 1,
+        startColumn: character + 1,
+      };
+    };
 
-    return;
-  }
-
-  const stdout = result.stdout.toString();
-  const stderr = result.stderr.toString();
-
-  if (result.status === 0) return;
-
-  if (result.status !== 2) {
-    setFailed(
-      inspect(
-        {
-          result,
-          output: result.output.map((output) => output?.toString()).join('\n'),
-          files,
-          stdout,
-          stderr,
-        },
-        true,
-        null,
-        true
-      )
+    const message = ts.flattenDiagnosticMessageText(
+      diagnostic.messageText,
+      '\n'
     );
 
-    return;
-  }
+    const { startLine, startColumn } = getDiagnosticPosition();
 
-  const locations = stdout
-    .trim()
-    .split('\n')
-    .filter(
-      (line) =>
-        !line.match(/^\s+/) && files.some((file) => line.startsWith(file))
-    )
-    .map((line) => {
-      const [location, ...rest] = line.split(':');
-      const githubPath = location.replace(
-        /\(([0-9]+),[0-9]+\)$/,
-        (_, l) => `#L${l}`
-      );
-      return {
-        location,
-        url: `${baseUrl}/tree/main/${githubPath}`,
-        error: rest.join(':').trim(),
-      };
+    error(message, {
+      file: diagnostic.file?.fileName,
+      startLine,
+      startColumn,
     });
-
-  const issueTitle = `TypeScript errors - #${prNumber}`;
-  const issueBody = [
-    ...locations.map(
-      ({ location, url, error }) => `- [ ] [${location}](${url}): \`${error}\``
-    ),
-    `Ref ${baseUrl}/pull/${prNumber}`,
-  ].join('\n');
-
-  const encodedIssueTitle = encodeURIComponent(issueTitle);
-  const encodedIssueBody = encodeURIComponent(issueBody);
-
-  const table = locations
-    .map(
-      ({ location, url, error }) => `| [${location}](${url}) | \`${error}\` |`
-    )
-    .join('\n');
-
-  const body = [
-    '<details>',
-    '<summary>',
-    `TypeScript Report - <a href="${baseUrl}/issues/new?title=${encodedIssueTitle}&body=${encodedIssueBody}">Create an issue</a>`,
-    '</summary>',
-    '<br>',
-    '',
-    '| Location | Error |',
-    '| -------- | ----- |',
-    table,
-    '</details>',
-  ].join('\n');
-
-  const octokit = getOctokit(ghToken);
-
-  await octokit.rest.issues.createComment({
-    owner,
-    repo,
-    // eslint-disable-next-line camelcase
-    issue_number: prNumber,
-    body,
-  });
+  }
 };
 
 (async () => {
   try {
-    const ghToken = getInput('githubToken');
+    const project = getInput('project') || 'tsconfig.json';
+    const projectPath = path.resolve(process.cwd(), project);
+
     const files = getInput('files');
 
-    await check(ghToken, files.split(' '));
-  } catch (error) {
+    await check(projectPath, files.split(' '));
+  } catch (e) {
     // eslint-disable-next-line no-console
-    console.error(error);
+    console.error(e);
 
-    if (error instanceof Error) setFailed(error.message);
+    if (e instanceof Error) setFailed(e.message);
   }
 })();
