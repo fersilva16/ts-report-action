@@ -38,7 +38,13 @@ const check = async (projectPath: string, files: string[]) => {
 
   const sortedDiagnostics = ts.sortAndDeduplicateDiagnostics(diagnostics);
 
-  for (const diagnostic of sortedDiagnostics) {
+  const filteredDiagnostics = sortedDiagnostics.filter((diagnostic) => {
+    if (!diagnostic.file?.fileName) return true;
+
+    return config.fileNames.includes(diagnostic.file.fileName);
+  });
+
+  for (const diagnostic of filteredDiagnostics) {
     const getDiagnosticPosition = () => {
       if (!diagnostic.file || !diagnostic.start) {
         return {
