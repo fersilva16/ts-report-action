@@ -1,6 +1,6 @@
 {
   "name": "ts-report-action",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "description": "GitHub Action to report TypeScript errors in Pull Requests",
   "main": "dist/index.js",

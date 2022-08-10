@@ -8,7 +8,7 @@ branding:
   icon: check-square
   color: blue
 inputs:
-  githubToken:
-    description: 'GitHub token'
+  project:
+    description: 'TypeScript project file'
   files:
     description: 'Files to check'
