@@ -5,11 +5,10 @@
   "description": "GitHub Action to report TypeScript errors in Pull Requests",
   "main": "dist/index.js",
   "scripts": {
-    "build": "esbuild ./src/index.ts --bundle --platform=node --target=node16.15.1 --outfile=./dist/index.js",
+    "build": "esbuild ./src/index.ts --bundle --platform=node --sourcemap=external --target=node16.15.1 --outfile=./dist/index.js",
     "format": "prettier --write '**/*.ts'",
     "format-check": "prettier --check '**/*.ts'",
     "lint": "eslint src/**/*.ts",
-    "package": "ncc build --source-map --license licenses.txt",
     "test": "jest"
   },
   "repository": {
@@ -31,7 +30,6 @@
     "@types/jest": "^27.5.1",
     "@types/node": "^16.10.5",
     "@typescript-eslint/parser": "^5.8.1",
-    "@vercel/ncc": "^0.31.1",
     "esbuild": "^0.15.0",
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.5.0",
