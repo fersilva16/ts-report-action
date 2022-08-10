@@ -1,0 +1,13 @@
+name: 'TypeScript report'
+description: 'GitHub Action to report TypeScript errors in Pull Requests'
+author: 'Fernando Silva'
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
+inputs:
+  project:
+    description: 'Project path'
+    required: false
+  files:
+    description: 'Files to check'
+    required:
