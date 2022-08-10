@@ -4,6 +4,9 @@ author: 'Fernando Silva'
 runs:
   using: 'node16'
   main: 'dist/index.js'
+branding:
+  icon: check-square
+  color: blue
 inputs:
   project:
     description: 'Project path'
