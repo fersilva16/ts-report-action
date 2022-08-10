@@ -101,7 +101,7 @@ const check = async (ghToken: string, files: string[]) => {
   const body = [
     '<details>',
     '<summary>',
-    'TypeScript Report - <a href="${baseUrl}/issues/new?title=${encodedIssueTitle}&body=${encodedIssueBody}">Create an issue</a>',
+    `TypeScript Report - <a href="${baseUrl}/issues/new?title=${encodedIssueTitle}&body=${encodedIssueBody}">Create an issue</a>`,
     '</summary>',
     '<br>',
     '| Location | Error |',
