@@ -7221,6 +7221,7 @@ var check = async (ghToken, files) => {
     `TypeScript Report - <a href="${baseUrl}/issues/new?title=${encodedIssueTitle}&body=${encodedIssueBody}">Create an issue</a>`,
     "</summary>",
     "<br>",
+    "",
     "| Location | Error |",
     "| -------- | ----- |",
     table,
